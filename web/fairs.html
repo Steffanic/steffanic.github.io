@@ -117,13 +117,18 @@
                     onEachFeature: function(feature, layer) {
                         if (feature.properties.popup) {
                         layer.bindPopup(feature.properties.popup).on("click", function(e){
-                                        var message = feature.properties.popup;
+                                        var message = "map_click_event: ".concat(feature.properties.popup);
                                         window.parent.postMessage(message, "*");
                                     });
+                                    
+
                         }
                         if (feature.properties.tooltip) {
-                        layer.bindTooltip(feature.properties.tooltip);
+                        layer.bindTooltip(feature.properties.popup);
                         }
+                        layer.on("mouseover", function (ev) {
+                                        this.openPopup();
+                                    });
                     }
                 })
 
@@ -151,5 +156,26 @@
                 }
             })
             
+            window.parent.addEventListener('message', function (e){
+                if(e.data.split(" ")[0]=='set_home_lat_lng:'){
+                    var home_latLng = e.data.split("[")[1].split(", ");
+                    var home_latLng_doubles = [];
+                    for (let i = 0; i<home_latLng.length; i++) {
+                        var latOrLng = home_latLng[i];
+                        var latOrLngClean = latOrLng.replace("]","");
+                        var latOrLngFloat = parseFloat(latOrLngClean);
+                        home_latLng_doubles.push(latOrLngFloat);
+                    }
+
+                    var myIcon = L.icon({
+                        iconUrl: "https://img.icons8.com/glyph-neue/128/000000/home.png",
+                        iconSize: [38, 38],
+                        iconAnchor: [0,0],
+                        popupAnchor: [-3, -76],
+                    });
+
+                    L.marker(home_latLng_doubles, {icon: myIcon}).addTo(map_cea9402352cb429b845f64ce2a60f9cd);
+                }
+            })
         
 </script>
