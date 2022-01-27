@@ -13,6 +13,7 @@
     <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Falke-Design/L.Donut@latest/src/L.Donut.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css"/>
@@ -155,6 +156,8 @@
                     map_cea9402352cb429b845f64ce2a60f9cd.timeDimension.setCurrentTime(e.data.split(" ")[1]);
                 }
             })
+
+            var homeMarker;
             
             window.parent.addEventListener('message', function (e){
                 if(e.data.split(" ")[0]=='set_home_lat_lng:'){
@@ -173,8 +176,38 @@
                         iconAnchor: [0,0],
                         popupAnchor: [-3, -76],
                     });
+                    if(homeMarker == null){
+                        
+                    } else {
+                        map_cea9402352cb429b845f64ce2a60f9cd.removeLayer(homeMarker);
+                    }
+                    homeMarker = L.marker(L.latLng(home_latLng_doubles), {icon: myIcon}).addTo(map_cea9402352cb429b845f64ce2a60f9cd);
+                }
+            })
 
-                    L.marker(home_latLng_doubles, {icon: myIcon}).addTo(map_cea9402352cb429b845f64ce2a60f9cd);
+            var home_dist_filter;
+
+            window.parent.addEventListener('message', function (e) {
+                
+                if(e.data.split(" ")[0]=='apply_home_filter:'){
+                    if(home_dist_filter!=null){
+                        map_cea9402352cb429b845f64ce2a60f9cd.removeLayer(home_dist_filter);
+                    }
+                    home_dist_filter = L.donut(homeMarker.getLatLng(),
+                    {radius: 2000000000,
+                    innerRadius: e.data.split(" ")[1]*1609.34,
+                    innerRadiusAsPercent: false,
+                    color: '#000',
+                    weight: 2,
+                    }
+                    ).addTo(map_cea9402352cb429b845f64ce2a60f9cd);
+                    map_cea9402352cb429b845f64ce2a60f9cd.panTo(homeMarker.getLatLng());
+                    var upperLeftLatLng = homeMarker.getLatLng();
+                    upperLeftLatLng = L.latLng(upperLeftLatLng.lat - e.data.split(" ")[1]*1609.34/111319.5, upperLeftLatLng.lng - e.data.split(" ")[1]*1609.34/(111319.5*Math.cos(upperLeftLatLng.lat*Math.PI/180)));
+                    var lowerRightLatLng = homeMarker.getLatLng();
+                    lowerRightLatLng = L.latLng(lowerRightLatLng.lat + e.data.split(" ")[1]*1609.34/111319.5, lowerRightLatLng.lng + e.data.split(" ")[1]*1609.34/(111319.5*Math.cos(lowerRightLatLng.lat*Math.PI/180)));
+                    
+                    map_cea9402352cb429b845f64ce2a60f9cd.fitBounds(L.latLngBounds(upperLeftLatLng, lowerRightLatLng));
                 }
             })
         
