@@ -49,6 +49,9 @@
 </body>
 <script>    
     
+            var activeWeekNumber=0;
+            var markersInRoute= new Map();
+
             var map_cea9402352cb429b845f64ce2a60f9cd = L.map(
                 "map_cea9402352cb429b845f64ce2a60f9cd",
                 {
@@ -120,6 +123,20 @@
                         layer.bindPopup(feature.properties.popup).on("click", function(e){
                                         var message = "map_click_event: ".concat(feature.properties.popup);
                                         window.parent.postMessage(message, "*");
+
+                                        var routeMarker = L.marker(layer.getLatLng());
+                                        var weekNum = `${parseInt(activeWeekNumber)+1}`
+                                        alert(activeWeekNumber);
+                                        routeMarker.setIcon(L.icon({
+                                            iconUrl: `icons/number-${parseInt(activeWeekNumber)+1}.png`,
+                                            iconSize: [40,40],
+                                            iconAnchor: [20,20],
+                                        }));
+
+                                        markersInRoute.set(`${activeWeekNumber}`,routeMarker); 
+
+                                        routeMarker.addTo(map_cea9402352cb429b845f64ce2a60f9cd);
+                                        activeWeekNumber = parseInt(activeWeekNumber)+1;
                                     });
                                     
 
@@ -144,7 +161,7 @@
         
     
             map_cea9402352cb429b845f64ce2a60f9cd.fitBounds(
-                [[31.3511, -124.4218], [48.8428, -102.2583]],
+                [[48.081749,-124.182312], [32.834982,-102.014627]],
                 {}
             );
             window.parent.addEventListener('message', function (e){
@@ -156,6 +173,26 @@
                     map_cea9402352cb429b845f64ce2a60f9cd.timeDimension.setCurrentTime(e.data.split(" ")[1]);
                 }
             })
+
+            window.parent.addEventListener('message', function (e){
+                //set_active_week weekNumber
+                //weekNumber: int
+                if(e.data.split(" ")[0]=="set_active_week:"){
+                    activeWeekNumber = e.data.split(" ")[1];
+                }
+            });
+
+            window.parent.addEventListener('message', function (e){
+                //remove_route_marker markerNumber
+                //markerNumber: int
+                if(e.data.split(" ")[0]=="remove_route_marker:"){
+                    markerNumberToRemove = e.data.split(" ")[1];
+                    alert(markerNumberToRemove);
+                    alert(markersInRoute.get(`${markerNumberToRemove}`));
+                    map_cea9402352cb429b845f64ce2a60f9cd.removeLayer(markersInRoute.get(markerNumberToRemove));
+                    markersInRoute.delete(`${markerNumberToRemove}`);
+                }
+            });
 
             var homeMarker;
             
