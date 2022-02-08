@@ -135,7 +135,7 @@
 
                                         var routeMarker = L.marker(layer.getLatLng());
                                         var weekNum = `${parseInt(activeWeekNumber)+1}`
-                                        alert(activeWeekNumber);
+                                       
                                         routeMarker.setIcon(L.icon({
                                             iconUrl: `icons/number-${parseInt(activeWeekNumber)+1}.png`,
                                             iconSize: [40,40],
@@ -196,8 +196,7 @@
                 //markerNumber: int
                 if(e.data.split(" ")[0]=="remove_route_marker:"){
                     markerNumberToRemove = e.data.split(" ")[1];
-                    alert(markerNumberToRemove);
-                    alert(markersInRoute.get(`${markerNumberToRemove}`));
+                    
                     map_cea9402352cb429b845f64ce2a60f9cd.removeLayer(markersInRoute.get(markerNumberToRemove));
                     markersInRoute.delete(`${markerNumberToRemove}`);
                 }
