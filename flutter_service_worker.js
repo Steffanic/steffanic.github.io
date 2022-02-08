@@ -22,7 +22,7 @@ const RESOURCES = {
 "canvaskit/canvaskit.wasm": "04ed3c745ff1dee16504be01f9623498",
 "canvaskit/profiling/canvaskit.js": "f3bfccc993a1e0bfdd3440af60d99df4",
 "canvaskit/profiling/canvaskit.wasm": "a9610cf39260f60fbe7524a785c66101",
-"fairs.html": "756168d4f94b4b075acc4d7a88451bfd",
+"fairs.html": "3bfe1524cfffdee2060a21ecda3756af",
 "favicon.png": "5dcef449791fa27946b3d35ad8803796",
 "icons/Icon-192.png": "ac9a721a12bbc803b44f645561ecb1e1",
 "icons/Icon-512.png": "96e752610906ba2a93c65f8abe1645f1",
@@ -37,9 +37,9 @@ const RESOURCES = {
 "icons/number-7.png": "5c76f6c57e326ab320f2394440f90487",
 "icons/number-8.png": "5a315871a127ceee481c09471875e810",
 "icons/number-9.png": "32677bfeb2626644c761164c6384a2f0",
-"index.html": "12b1685ce037fa2783ec2cd5377ba1c6",
-"/": "12b1685ce037fa2783ec2cd5377ba1c6",
-"main.dart.js": "21b09faf049d8b696501155a87a19d22",
+"index.html": "9bfefe30604e26c53d4a75a3f54531a4",
+"/": "9bfefe30604e26c53d4a75a3f54531a4",
+"main.dart.js": "d17816d1dd8fe10568dfb1090d384cd5",
 "manifest.json": "1c1b35bea54569d3411e68a6510fb942",
 "version.json": "75a41e110323d5fd688ed9dbf45133e3"
 };
