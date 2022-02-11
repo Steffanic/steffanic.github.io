@@ -188,6 +188,18 @@
                 //weekNumber: int
                 if(e.data.split(" ")[0]=="set_active_week:"){
                     activeWeekNumber = e.data.split(" ")[1];
+                    if(prev_event_dist_filter!=null){
+                        map_cea9402352cb429b845f64ce2a60f9cd.removeLayer(prev_event_dist_filter);
+                        
+                        prev_event_dist_filter = L.donut(markersInRoute.get(`${activeWeekNumber-1}`).getLatLng(),
+                        {radius: 2000000000,
+                        innerRadius: prev_event_filter_dist,
+                        innerRadiusAsPercent: false,
+                        color: '#000',
+                        weight: 2,
+                        }
+                        ).addTo(map_cea9402352cb429b845f64ce2a60f9cd);
+                    }
                 }
             });
 
@@ -231,6 +243,11 @@
             })
 
             var home_dist_filter;
+            var prev_event_dist_filter;
+            var home_filter_dist;
+            var prev_event_filter_dist;
+
+
 
             window.parent.addEventListener('message', function (e) {
                 
@@ -238,9 +255,10 @@
                     if(home_dist_filter!=null){
                         map_cea9402352cb429b845f64ce2a60f9cd.removeLayer(home_dist_filter);
                     }
+                    home_filter_dist = e.data.split(" ")[1]*1609.34
                     home_dist_filter = L.donut(homeMarker.getLatLng(),
                     {radius: 2000000000,
-                    innerRadius: e.data.split(" ")[1]*1609.34,
+                    innerRadius: home_filter_dist,
                     innerRadiusAsPercent: false,
                     color: '#000',
                     weight: 2,
@@ -253,6 +271,24 @@
                     lowerRightLatLng = L.latLng(lowerRightLatLng.lat + e.data.split(" ")[1]*1609.34/111319.5, lowerRightLatLng.lng + e.data.split(" ")[1]*1609.34/(111319.5*Math.cos(lowerRightLatLng.lat*Math.PI/180)));
                     
                     map_cea9402352cb429b845f64ce2a60f9cd.fitBounds(L.latLngBounds(upperLeftLatLng, lowerRightLatLng));
+                }
+            })
+            window.parent.addEventListener('message', function (e) {
+                
+                if(e.data.split(" ")[0]=='apply_prev_event_filter:'){
+                    if(prev_event_dist_filter!=null){
+                        map_cea9402352cb429b845f64ce2a60f9cd.removeLayer(prev_event_dist_filter);
+                    }
+                    prev_event_filter_dist = e.data.split(" ")[1]*1609.34;
+                    prev_event_dist_filter = L.donut(markersInRoute.get(`${activeWeekNumber-1}`).getLatLng(),
+                    {radius: 2000000000,
+                    innerRadius: prev_event_filter_dist,
+                    innerRadiusAsPercent: false,
+                    color: '#000',
+                    weight: 2,
+                    }
+                    ).addTo(map_cea9402352cb429b845f64ce2a60f9cd);
+                    
                 }
             })
         
