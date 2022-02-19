@@ -40,7 +40,7 @@
     <script src="https://cdn.jsdelivr.net/npm/leaflet-timedimension@1.1.1/dist/leaflet.timedimension.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/default.min.css"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-timedimension@1.1.1/dist/leaflet.timedimension.control.css"/>
+    <link rel="stylesheet" href="leaflet.timedimension.control.min.css"/>
 </head>
 <body>    
     
@@ -131,13 +131,13 @@
 
                                         var jsonPayload = `{"name":"${name}","attendance":"${attendance}","dates":"${dates}","contact":"${contact}","phone":"${phone}"}`;
                                         var message = "map_click_event: ".concat(jsonPayload);
-                                        window.parent.postMessage(message, "*");
+                                        
 
                                         var routeMarker = L.marker(layer.getLatLng());
                                         var weekNum = `${parseInt(activeWeekNumber)+1}`
                                        
                                         routeMarker.setIcon(L.icon({
-                                            iconUrl: `icons/number-${parseInt(activeWeekNumber)+1}.png`,
+                                            iconUrl: `icons/${parseInt(activeWeekNumber)+1}.png`,
                                             iconSize: [40,40],
                                             iconAnchor: [20,20],
                                         }));
@@ -146,6 +146,8 @@
 
                                         routeMarker.addTo(map_cea9402352cb429b845f64ce2a60f9cd);
                                         activeWeekNumber = parseInt(activeWeekNumber)+1;
+
+                                        window.parent.postMessage(message, "*");
                                     });
                                     
 
@@ -188,19 +190,20 @@
                 //weekNumber: int
                 if(e.data.split(" ")[0]=="set_active_week:"){
                     activeWeekNumber = e.data.split(" ")[1];
+                    if(prev_event_filter_dist!=undefined){
                     if(prev_event_dist_filter!=null){
                         map_cea9402352cb429b845f64ce2a60f9cd.removeLayer(prev_event_dist_filter);
-                        
-                        prev_event_dist_filter = L.donut(markersInRoute.get(`${activeWeekNumber-1}`).getLatLng(),
-                        {radius: 2000000000,
-                        innerRadius: prev_event_filter_dist,
-                        innerRadiusAsPercent: false,
-                        color: '#000',
-                        weight: 2,
-                        }
-                        ).addTo(map_cea9402352cb429b845f64ce2a60f9cd);
                     }
-                }
+                    prev_event_dist_filter = L.donut(markersInRoute.get(`${activeWeekNumber-1}`).getLatLng(),
+                    {radius: 2000000000,
+                    innerRadius: prev_event_filter_dist,
+                    innerRadiusAsPercent: false,
+                    color: '#000',
+                    weight: 2,
+                    }
+                    ).addTo(map_cea9402352cb429b845f64ce2a60f9cd);
+                
+                }}
             });
 
             window.parent.addEventListener('message', function (e){
@@ -238,7 +241,9 @@
                     } else {
                         map_cea9402352cb429b845f64ce2a60f9cd.removeLayer(homeMarker);
                     }
-                    homeMarker = L.marker(L.latLng(home_latLng_doubles), {icon: myIcon}).addTo(map_cea9402352cb429b845f64ce2a60f9cd);
+                    homeMarker = L.marker(L.latLng(home_latLng_doubles), {icon: myIcon}).on("click", function (e){
+                        window.parent.postMessage("set_home_week", "*");
+                    }).addTo(map_cea9402352cb429b845f64ce2a60f9cd);
                 }
             })
 
@@ -280,6 +285,9 @@
                         map_cea9402352cb429b845f64ce2a60f9cd.removeLayer(prev_event_dist_filter);
                     }
                     prev_event_filter_dist = e.data.split(" ")[1]*1609.34;
+                    if(markersInRoute.size==0){
+                        
+                    } else {
                     prev_event_dist_filter = L.donut(markersInRoute.get(`${activeWeekNumber-1}`).getLatLng(),
                     {radius: 2000000000,
                     innerRadius: prev_event_filter_dist,
@@ -288,7 +296,7 @@
                     weight: 2,
                     }
                     ).addTo(map_cea9402352cb429b845f64ce2a60f9cd);
-                    
+                    }
                 }
             })
         
