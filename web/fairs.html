@@ -19173,7 +19173,10 @@
             iconSize: [40, 40],
             iconAnchor: [20, 20],
         }));
-
+        if(markersInRoute.get(`${weekNumber}`)!=undefined){
+            event_map.removeLayer(markersInRoute.get(`${weekNumber}`));
+            markersInRoute.delete(`${weekNumber}`);
+        }
         markersInRoute.set(`${weekNumber}`, routeMarker);
 
         routeMarker.addTo(event_map);
