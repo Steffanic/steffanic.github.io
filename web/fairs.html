@@ -41,7 +41,7 @@
     <meta name="viewport" content="width=device-width,
                 initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <style>
-        #map_cea9402352cb429b845f64ce2a60f9cd {
+        #event_map {
             position: relative;
             width: 100.0%;
             height: 100.0%;
@@ -62,16 +62,21 @@
 
 <body>
 
-    <div class="folium-map" id="map_cea9402352cb429b845f64ce2a60f9cd"></div>
+    <div class="folium-map" id="event_map"></div>
 
 </body>
+
+
 <script>
+    window.parent.postMessage("hello_world", "*");
+    //GLOBALS
     var activeWeekNumber = 0;
     var markersInRoute = new Map();
+    var homeMarker;
+    var eventCount = new Map();
 
-    var map_cea9402352cb429b845f64ce2a60f9cd = L.map(
-        "map_cea9402352cb429b845f64ce2a60f9cd", {
-            center: [0, 0],
+    var event_map = L.map(
+        "event_map", {
             crs: L.CRS.EPSG3857,
             zoom: 1,
             zoomControl: true,
@@ -83,7 +88,7 @@
 
 
 
-    var tile_layer_ce013f8215874f1aac387c2831f7f291 = L.tileLayer(
+    var openstreetmap_tile_layer = L.tileLayer(
         "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             "attribution": "Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.",
             "detectRetina": false,
@@ -95,7 +100,7 @@
             "subdomains": "abc",
             "tms": false
         }
-    ).addTo(map_cea9402352cb429b845f64ce2a60f9cd);
+    ).addTo(event_map);
 
 
     L.Control.TimeDimensionCustom = L.Control.TimeDimension.extend({
@@ -105,9 +110,11 @@
             return newdate.format("YYYY/MM/DD");
         }
     });
-    map_cea9402352cb429b845f64ce2a60f9cd.timeDimension = L.timeDimension({
+
+    event_map.timeDimension = L.timeDimension({
         period: "P1D",
     });
+
     var timeDimensionControl = new L.Control.TimeDimensionCustom({
         "autoPlay": false,
         "loopButton": true,
@@ -121,9 +128,10 @@
         "position": "bottomleft",
         "timeSliderDragUpdate": true
     });
-    map_cea9402352cb429b845f64ce2a60f9cd.addControl(this.timeDimensionControl);
+    //event_map.addControl(this.timeDimensionControl);
 
-    var geoJsonLayer = L.geoJson({
+    var geoJsonLayer = L.geoJson(
+        {
         "type": "FeatureCollection",
         "features": [{
             "type": "Feature",
@@ -19110,6 +19118,11 @@
             return feature.properties.style;
         },
         onEachFeature: function(feature, layer) {
+            if(eventCount.has(`${feature.properties.time}`)){
+                eventCount.set(`${feature.properties.time}`, eventCount.get(`${feature.properties.time}`)+1);
+            } else {
+                eventCount.set(`${feature.properties.time}`, 1);
+            }
             if (feature.properties.popup) {
                 layer.bindPopup(feature.properties.popup).on("click", function(e) {
 
@@ -19118,35 +19131,23 @@
                     var dates = feature.properties.popup.split("<br>")[2];
                     var contact = feature.properties.contact_name;
                     var phone = feature.properties.contact_phone;
+                    var latLng = layer.getLatLng();
                     var dist_from_prev_event = "-1";
                     
                     var dist_from_home = "-1";
 
                     if(markersInRoute.get(`${activeWeekNumber-1}`)!=undefined){
-                        dist_from_prev_event = (map_cea9402352cb429b845f64ce2a60f9cd.distance(layer.getLatLng(), markersInRoute.get(`${activeWeekNumber-1}`).getLatLng()))/1609.34;
+                        dist_from_prev_event = (event_map.distance(layer.getLatLng(), markersInRoute.get(`${activeWeekNumber-1}`).getLatLng()))/1609.34;
                     }
 
-                    if(homeMarker!=undefined){
-                        dist_from_home = (map_cea9402352cb429b845f64ce2a60f9cd.distance(layer.getLatLng(), homeMarker.getLatLng()))/1609.34;
-                    }
+                    dist_from_home = getDistanceFromHomeForEvent(layer);
 
 
-                    var jsonPayload = `{"name":"${name}","attendance":"${attendance}","dates":"${dates}","contact":"${contact}","phone":"${phone}", "dist_from_prev_event":"${parseFloat(dist_from_prev_event).toFixed(2)}", "dist_from_home":"${parseFloat(dist_from_home).toFixed(2)}"}`;
+                    var jsonPayload = `{"name":"${name}","attendance":"${attendance}","dates":"${dates}","contact":"${contact}","phone":"${phone}", "dist_from_prev_event":"${parseFloat(dist_from_prev_event).toFixed(2)}", "dist_from_home":"${parseFloat(dist_from_home).toFixed(2)}", "latLng":"${latLng.lat}, ${latLng.lng}"}`;
                     var message = "map_click_event: ".concat(jsonPayload);
 
 
-                    var routeMarker = L.marker(layer.getLatLng());
-                    var weekNum = `${parseInt(activeWeekNumber)+1}`
-
-                    routeMarker.setIcon(L.icon({
-                        iconUrl: `icons/${parseInt(activeWeekNumber)+1}.png`,
-                        iconSize: [40, 40],
-                        iconAnchor: [20, 20],
-                    }));
-
-                    markersInRoute.set(`${activeWeekNumber}`, routeMarker);
-
-                    routeMarker.addTo(map_cea9402352cb429b845f64ce2a60f9cd);
+                    add_route_marker_for_week(activeWeekNumber, layer.getLatLng());
                     activeWeekNumber = parseInt(activeWeekNumber) + 1;
 
                     window.parent.postMessage(message, "*");
@@ -19163,67 +19164,127 @@
         }
     })
 
-    var timestamped_geo_json_c0a4813ed2ac4f2383d5c8aad4d7f48b = L.timeDimension.layer.geoJson(
+    function add_route_marker_for_week(weekNumber, latLng){
+        var routeMarker = L.marker(latLng);
+        
+
+        routeMarker.setIcon(L.icon({
+            iconUrl: `icons/${parseInt(weekNumber)+1}.png`,
+            iconSize: [40, 40],
+            iconAnchor: [20, 20],
+        }));
+
+        markersInRoute.set(`${weekNumber}`, routeMarker);
+
+        routeMarker.addTo(event_map);
+    }
+
+    window.parent.addEventListener('message', function(e){
+        if(e.data.split(" ")[0]=="add_route_marker_for_week:"){
+            weekNumber = e.data.split(" ")[1];
+            lat = e.data.split(" ")[2];
+            lon = e.data.split(" ")[3];
+
+
+            add_route_marker_for_week(weekNumber, [lat, lon]);
+        }
+    })
+
+    var event_geoJson_layer = L.timeDimension.layer.geoJson(
         geoJsonLayer, {
             updateTimeDimension: true,
             addlastPoint: false,
-            duration: "P1D",
+            duration: "P1W",
         }
-    ).addTo(map_cea9402352cb429b845f64ce2a60f9cd);
+    ).addTo(event_map);
 
 
-    map_cea9402352cb429b845f64ce2a60f9cd.fitBounds(
+    event_map.fitBounds(
         [
             [48.081749, -124.182312],
             [32.834982, -102.014627]
         ], {}
     );
-    window.parent.addEventListener('message', function(e) {
-        if (e.data == "Go!") {
-            alert(map_cea9402352cb429b845f64ce2a60f9cd.timeDimension.getCurrentTime());
+
+    function getDistanceFromHomeForEvent(eventMarker){
+        if(homeMarker==undefined){
+            console.log("There is no homeMarker object to calculate the distance from.");
+            return "-1";
         }
-    }, false);
+        var dist_from_home = (event_map.distance(eventMarker.getLatLng(), homeMarker.getLatLng()))/1609.34;
+        return dist_from_home;
+    }
+
+    window.parent.addEventListener('message', function(e){
+        if (e.data.split(" ")[0] == "update_dist_from_home_for_event:"){
+            weekNumber = e.data.split(" ")[1];
+            eventMarker = markersInRoute.get(`${weekNumber}`);
+            if(eventMarker == undefined){
+                console.log(`No event marker for week number ${weekNumber}`);
+            } else {
+                message = `dist_from_home_for_event: ${weekNumber} ${getDistanceFromHomeForEvent(eventMarker)}`;
+                window.parent.postMessage(message, "*");
+            }
+        }
+    })
+  
+    //set current time
+
+    function set_current_time(timeString){
+        // timeString: string, time in millisecondsAfterEpoch
+        event_map.timeDimension.setCurrentTime(timeString);
+    }
 
     window.parent.addEventListener('message', function(e) {
         if (e.data.split(" ")[0] == "set_current_time:") {
-            map_cea9402352cb429b845f64ce2a60f9cd.timeDimension.setCurrentTime(e.data.split(" ")[1]);
+            set_current_time(e.data.split(" ")[1]);
         }
     })
+
+    //set active week
+
+    function set_previous_event_dist_filter(weekNumber){
+        if (prev_event_filter_dist != undefined) {
+                if (prev_event_dist_filter != null) {
+                    console.log("removing previous event dist");
+                    event_map.removeLayer(prev_event_dist_filter);
+                }
+                if (markersInRoute.get(`${weekNumber-1}`)!=undefined){
+                    console.log(weekNumber);
+                prev_event_dist_filter = L.donut(markersInRoute.get(`${weekNumber-1}`).getLatLng(), {
+                    radius: 2000000000,
+                    innerRadius: prev_event_filter_dist,
+                    innerRadiusAsPercent: false,
+                    color: '#32323257',
+                    weight: 1,
+                    }).addTo(event_map);
+            }
+
+            }
+    }
 
     window.parent.addEventListener('message', function(e) {
         //set_active_week weekNumber
         //weekNumber: int
         if (e.data.split(" ")[0] == "set_active_week:") {
             activeWeekNumber = e.data.split(" ")[1];
-            if (prev_event_filter_dist != undefined) {
-                if (prev_event_dist_filter != null) {
-                    map_cea9402352cb429b845f64ce2a60f9cd.removeLayer(prev_event_dist_filter);
-                }
-                prev_event_dist_filter = L.donut(markersInRoute.get(`${activeWeekNumber-1}`).getLatLng(), {
-                    radius: 2000000000,
-                    innerRadius: prev_event_filter_dist,
-                    innerRadiusAsPercent: false,
-                    color: '#000',
-                    weight: 2,
-                }).addTo(map_cea9402352cb429b845f64ce2a60f9cd);
-
-            }
+            set_previous_event_dist_filter(activeWeekNumber)
         }
     });
-
+    //remove route marker
     window.parent.addEventListener('message', function(e) {
         //remove_route_marker markerNumber
         //markerNumber: int
         if (e.data.split(" ")[0] == "remove_route_marker:") {
             markerNumberToRemove = e.data.split(" ")[1];
 
-            map_cea9402352cb429b845f64ce2a60f9cd.removeLayer(markersInRoute.get(markerNumberToRemove));
+            event_map.removeLayer(markersInRoute.get(markerNumberToRemove));
             markersInRoute.delete(`${markerNumberToRemove}`);
         }
     });
 
-    var homeMarker;
-
+    
+    //set home lat lng
     window.parent.addEventListener('message', function(e) {
         if (e.data.split(" ")[0] == 'set_home_lat_lng:') {
             var home_latLng = e.data.split("[")[1].split(", ");
@@ -19238,19 +19299,26 @@
             var myIcon = L.icon({
                 iconUrl: "https://img.icons8.com/glyph-neue/128/000000/home.png",
                 iconSize: [38, 38],
-                iconAnchor: [0, 0],
+                iconAnchor: [19, 19],
                 popupAnchor: [-3, -76],
             });
             if (homeMarker == null) {
 
             } else {
-                map_cea9402352cb429b845f64ce2a60f9cd.removeLayer(homeMarker);
+                event_map.removeLayer(homeMarker);
             }
             homeMarker = L.marker(L.latLng(home_latLng_doubles), {
-                icon: myIcon
+                icon: myIcon,
+
             }).on("click", function(e) {
                 window.parent.postMessage("set_home_week", "*");
-            }).addTo(map_cea9402352cb429b845f64ce2a60f9cd);
+            }).addTo(event_map);
+        }
+    })
+
+    window.parent.addEventListener('message', function (e) {
+        if(e.data.split(" ")[0] == "remove_home_marker"){
+            event_map.removeLayer(homeMarker);
         }
     })
 
@@ -19260,35 +19328,36 @@
     var prev_event_filter_dist;
 
 
-
+    //Apply home filter
     window.parent.addEventListener('message', function(e) {
 
         if (e.data.split(" ")[0] == 'apply_home_filter:') {
             if (home_dist_filter != null) {
-                map_cea9402352cb429b845f64ce2a60f9cd.removeLayer(home_dist_filter);
+                event_map.removeLayer(home_dist_filter);
             }
             home_filter_dist = e.data.split(" ")[1] * 1609.34
             home_dist_filter = L.donut(homeMarker.getLatLng(), {
                 radius: 2000000000,
                 innerRadius: home_filter_dist,
                 innerRadiusAsPercent: false,
-                color: '#000',
+                color: '#32323257',
                 weight: 2,
-            }).addTo(map_cea9402352cb429b845f64ce2a60f9cd);
-            map_cea9402352cb429b845f64ce2a60f9cd.panTo(homeMarker.getLatLng());
+            }).addTo(event_map);
+            event_map.panTo(homeMarker.getLatLng());
             var upperLeftLatLng = homeMarker.getLatLng();
             upperLeftLatLng = L.latLng(upperLeftLatLng.lat - e.data.split(" ")[1] * 1609.34 / 111319.5, upperLeftLatLng.lng - e.data.split(" ")[1] * 1609.34 / (111319.5 * Math.cos(upperLeftLatLng.lat * Math.PI / 180)));
             var lowerRightLatLng = homeMarker.getLatLng();
             lowerRightLatLng = L.latLng(lowerRightLatLng.lat + e.data.split(" ")[1] * 1609.34 / 111319.5, lowerRightLatLng.lng + e.data.split(" ")[1] * 1609.34 / (111319.5 * Math.cos(lowerRightLatLng.lat * Math.PI / 180)));
 
-            map_cea9402352cb429b845f64ce2a60f9cd.fitBounds(L.latLngBounds(upperLeftLatLng, lowerRightLatLng));
+            event_map.fitBounds(L.latLngBounds(upperLeftLatLng, lowerRightLatLng));
         }
     })
+    //Apply prev. event filter
     window.parent.addEventListener('message', function(e) {
 
         if (e.data.split(" ")[0] == 'apply_prev_event_filter:') {
             if (prev_event_dist_filter != null) {
-                map_cea9402352cb429b845f64ce2a60f9cd.removeLayer(prev_event_dist_filter);
+                event_map.removeLayer(prev_event_dist_filter);
             }
             prev_event_filter_dist = e.data.split(" ")[1] * 1609.34;
             if (markersInRoute.size == 0) {
@@ -19300,8 +19369,42 @@
                     innerRadiusAsPercent: false,
                     color: '#000',
                     weight: 2,
-                }).addTo(map_cea9402352cb429b845f64ce2a60f9cd);
+                }).addTo(event_map);
             }
         }
     })
+    //fire click event for first Marker in map
+    window.parent.addEventListener('message', function(e) {
+        if (e.data == 'click_on_first_layer_in_map'){
+            var oneAndDone=false;
+            event_map.eachLayer(function(layer){
+                if(layer instanceof L.Marker){
+                if(!oneAndDone){
+                    layer.fire('click');
+                    
+                }
+                oneAndDone=true;
+            }
+            })
+        }
+    })
+
+    window.parent.addEventListener('message', function(e){
+        if(e.data == 'get_event_counts'){
+            var eventCountMessage = "eventCounts: {";
+            var oneAndDone=false;
+            eventCount.forEach(function(value, key, map){
+                if(oneAndDone){
+                eventCountMessage += ', ';
+            }
+                eventCountMessage += `"${key}"`;
+                eventCountMessage += ': ';
+                eventCountMessage += `"${value}"`;
+                oneAndDone=true;
+            })
+            eventCountMessage += '}';
+            window.parent.postMessage(eventCountMessage, "*");
+        }
+    })
+
 </script>
