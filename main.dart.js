@@ -43180,7 +43180,7 @@ case 14:if(j==="home"){j=q.a.c
 a3=!0}else a3=!1
 d=J.a4(a2)
 i=A.h(d.h(a2,"eventName"))
-f.push(i)
+f.push(A.h(d.h(a2,"eventName"))+"\n"+A.h(d.h(a2,"eventDates")))
 f.push(A.h(d.h(a2,"contact"))+"\n"+A.h(d.h(a2,"phone")))
 s=17
 return A.a5(q.tJ(j,i),$async$nW)
