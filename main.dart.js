@@ -46785,13 +46785,13 @@ $R:3,
 $S:108}
 A.aw7.prototype={
 $0(){var s,r,q="_tabController",p=this.a
-if(p.ax!=null){if(A.a(p.d,q).d===1){p.ax.bm(0)
-p.X(new A.avZ(p))}if(A.a(p.d,q).d===0){s=p.c.fL(t.N1)
-s.toString
-r=p.ax
+if(p.ax!=null){if(A.a(p.d,q).d===1){s=p.ax
+if(s.d)s.bm(0)
+p.X(new A.avZ(p))}if(A.a(p.d,q).d===0){if(!p.ax.d){r=p.c.fL(t.N1)
 r.toString
-s.m0(0,r)
-p.X(new A.aw_(p))}}},
+s=p.ax
+s.toString
+r.m0(0,s)}p.X(new A.aw_(p))}}},
 $S:0}
 A.avZ.prototype={
 $0(){this.a.cy=1},
